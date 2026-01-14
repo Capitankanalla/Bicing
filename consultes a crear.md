@@ -52,5 +52,9 @@
 ### quantitat de bicicletes en manteniment per taller ( X en taller X, Y en taller Y ... )
 ### nombre de manteniments iniciats en cada estació 
 ### bicicletes que acumulen més manteniments/reparacions/'visites al taller' 
+### bicicletes en trajecte a taller
+### temps mig entre incidènies 
+#### per pla
+#### per td'inici ( rlrc-dsn)
 
 
