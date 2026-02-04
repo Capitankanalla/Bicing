@@ -3,6 +3,51 @@
 -- FUNCIONS.
 
 -- 1. Calcular_cost trajecte(id_trajecte)
+DROP FUNCTION IF EXISTS calcula_preu_trajecte;
+
+DELIMITER //
+
+CREATE FUNCTION calcula_preu_trajecte( id_trajecte int )
+RETURNS decimal(8,2)
+BEGIN
+	set @cost = 0 ;
+	-- de l'usuari associat, mirem la seva subscripció
+	set @userID =	(select USUARI_idUSUARI from trajecte 	where idTRAJECTE = id_trajecte  ); /* id d'usuari igual a la del trajecte en si  	*/
+    set @subscricpio = (select tipus_SUBSCRIPCIONS_idSUBSCRIPCIONS from usuari where idUsuari = 	@userID  ) ;			 
+                            /* la id de subscripcio de l'usuari que té la id de l'usuari del trajecte */ 
+	set @primera_mitja_hora = ( select precio_por_MEDIA_hora from tipus_subscripcions where idSUBSCRIPCIONS = @subscricpio );
+	set @TEMPS_GRATIS = ( select TIEMPO_GRATIS from tipus_subscripcions where idSUBSCRIPCIONS = @subscricpio );
+    set @preu_hora_extra = ( select precio_hora_extra from tipus_subscripcions where idSUBSCRIPCIONS = @subscricpio );
+    set @preu_minut = @preu_hora_extra / 60  ;
+	set @dest_lliure = (select dock_final_lliure from trajecte where idTRAJECTE = id_trajecte );
+    if ( select trajecte.Hora_final from trajecte where idTRAJECTE = id_trajecte ) IS NOT NULL then 
+        		set @Temps =  ( select  TIMESTAMPDIFF(minute, trajecte.Hora_inici , trajecte.Hora_final) from trajecte where idTRAJECTE = id_trajecte  ) ;
+	else 
+				return 0 ;
+    end if; /* si té hora final, asignem un temps, sinó... 0 */ 
+    
+    
+    
+if !@dest_lliure then  /* si la destinació no té llocs lliures */
+		set  @temps = @temps - 30  ; /* restem 30 min al temps a facturar */
+end if ;
+
+/* si no hem arribat al tram de pagament, retornem @cost que era 0 */ 
+if  @TEMPS_GRATIS >= @Temps then 
+	 set @cost = 0 ; 
+/* en la resta de casos...*/
+else 
+    -- set @COST = @COST + @primera_mitja_hora , @temps = @temps - 30  ; /* afegim al cost el preu de la primera mitja hora  i restem 30 min al temps*/
+    set  @temps = @temps - @TEMPS_GRATIS   ;
+    set @cost = @cost +  @temps * @preu_minut; 
+ end if;
+    return @cost;
+END
+//
+DELIMITER ;
+
+-- select calcula_preu_trajecte(3);
+
 -- 2. nivell bateria(id_bicicleta)
 DELIMITER //
 
@@ -47,6 +92,7 @@ select * from
 
 
 -- 4 incidéncies_bici(id_bici)
+    
 -- 5.Bici_operativa(id_bici)
 DELIMITER //
 
