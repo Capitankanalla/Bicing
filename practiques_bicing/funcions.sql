@@ -1,5 +1,3 @@
--- Recomanacions funcions, procedures, triggers i events
-
 -- FUNCIONS.
 
 -- 1. Calcular_cost trajecte(id_trajecte)
@@ -48,6 +46,7 @@ DELIMITER ;
 
 -- select calcula_preu_trajecte(3);
 
+
 -- 2. nivell bateria(id_bicicleta)
 DELIMITER //
 
@@ -88,11 +87,41 @@ END;
 
 DELIMITER; 
 
-select * from 
 
+-- 4 manteniment_bici(id_bici)
+-- Comprobem quantes bicicletes necessiten manteniment o són averiades
+DELIMITER //
 
--- 4 incidéncies_bici(id_bici)
-    
+CREATE FUNCTION cal_manteniment (p_id_bici INT)
+RETURNS TINYINT
+DETERMINISTIC
+BEGIN
+    DECLARE v_incidents INT;
+    DECLARE v_greu INT;
+
+    -- Nombre total d'incidències acumulades
+    SELECT incident_acumulats
+    INTO v_incidents
+    FROM BICICLETA
+    WHERE idBICICLETA = p_id_bici;
+
+    -- Última incidència greu
+    SELECT 
+        MAX(roda + frens + manillar + sillin)
+    INTO v_greu
+    FROM INCIDENT_feedback i
+    JOIN TRAJECTE t ON i.TRAJECTE_idTRAJECTE = t.idTRAJECTE
+    WHERE t.BICICLETA_idBICICLETA = p_id_bici;
+
+    IF v_incidents >= 3 OR v_greu >= 1 THEN
+        RETURN 1;
+    ELSE
+        RETURN 0;
+    END IF;
+END //
+
+DELIMITER ;
+
 -- 5.Bici_operativa(id_bici)
 DELIMITER //
 
@@ -127,159 +156,5 @@ SELECT * FROM bicicleta WHERE idBICICLETA = 5;
 SELECT Bici_operativa(5);
 
 
--- PROCEDURES
 
--- 1. Iniciar_trajecte(id_trajecte, id_estacioFi)
--- 2. finalitzar_trajecte(id_trajecte, id_estacio_fi)
-
-DROP PROCEDURE IF EXISTS fi_trajecte;
-DELIMITER //
-CREATE PROCEDURE fi_trajecte( in id_trajecte int , id_estacio int  )
-BEGIN
-/* comprovem que hi ha lloc lliure a la destinació*/
-if (select docks_lliures from estacio where idESTACIO = id_estacio ) <= 0 then
-	/* si no hi havia lloc, marquem el rtajecte amb 0 ( NO/FALSE ) per poder facturar d'acord */
-	update trajecte set dock_final_lliure = false where idTRAJECTE = id_trajecte  ;
-    select " Has de buscar una altra estació amb llocs lliures";
-else 
-	update trajecte  /* marquem hora final i estació de final*/
-		set Hora_final = now() , id_EST_fin = id_estacio 
-        where  idTRAJECTE = id_trajecte  ; /* pel trajecte en concret */
-	/* a l'estació hem de ocupar un lloc , per tant té un lliure menys . */
-    update estacio 
-			set docks_lliures = docks_lliures - 1 where idESTACIO = id_estacio ; 
-	update bicicleta 
-			set ESTACIO_idESTACIO = id_estacio 
-            where idBICICLETA = ( select BICICLETA_idBICICLETA from trajecte where idTRAJECTE = id_trajecte);
-end if ;
--- select idTrajecte as "estas tancant el trajecte " from trajecte where idTRAJECTE = id_trajecte; 
-END
-//
-DELIMITER ;
-
-
--- call fi_trajecte( 9 , 10 );
- 
--- 3. assignar_bici(id_usuari, id_estacio)
--- 4. actualitzar_estacio(id_bici, id_nova_ubicacio)
- /* -- reinserir_bici(id_bici) -- per les bicicletes retirades del servei per incidencies. */
--- 5. mostra els trajectes en curs i la seva hora i estació d'origen , i la durada fins al moment.
-DROP PROCEDURE IF EXISTS trajectes_en_curs;
-DELIMITER //
-CREATE PROCEDURE trajectes_en_curs(  )
-/* retorna la llista de trajectes no finaltizats ( "en curs" i el seu origen*/
-BEGIN
-	select id_EST_origen , Hora_inici from trajecte where Hora_final IS NULL ;
-END
-//
-DELIMITER ;
-
-   --   call trajectes_en_curs; 
-
--- TRIGGERS
-
--- 1. validar_bateria -- abans d´assignar una bici electrica validar l´estat de carrega)
--- 2. inici_trajecte -- sumar un dock lliure de la estacio on es la bici
-/*
-DELIMITER //
-
-CREATE TRIGGER iniciar_trajecte
-BEFORE INSERT ON TRAJECTE
-FOR EACH ROW
-BEGIN
-    -- Restar 1 dock lliure a l'estació origen
-    UPDATE ESTACIO
-    SET docks_lliures = docks_lliures - 1
-    WHERE idESTACIO = NEW.id_EST_origen;
-END//
-
-DELIMITER ;
-
-
--- 3. Final_trajecte -- restar un dock de la estacio on es deixa la bici
-DELIMITER //
-
-CREATE TRIGGER finalitzar_trajecte
-AFTER UPDATE ON TRAJECTE
-FOR EACH ROW
-BEGIN
-    DECLARE docks INT;
-
-    -- activa quan el trajecte es tanca no abans
-    IF OLD.Hora_final IS NULL AND NEW.Hora_final IS NOT NULL THEN
-        
-        -- Comprovar docks lliures a l'estació final
-        SELECT docks_lliures INTO docks
-        FROM ESTACIO
-        WHERE idESTACIO = NEW.id_EST_fin;
-
-        IF docks <= 0 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'No hi ha docks lliures a l\'estació final';
-        END IF;
-
-        -- Sumar 1 dock lliure
-        UPDATE ESTACIO
-        SET docks_lliures = docks_lliures + 1
-        WHERE idESTACIO = NEW.id_EST_fin;
-
-        -- Moure la bici a l'estació final
-        UPDATE BICICLETA
-        SET ESTACIO_idESTACIO = NEW.id_EST_fin
-        WHERE idBICICLETA = NEW.BICICLETA_idBICICLETA;
-
-    END IF;
-END//
-
-DELIMITER ;
-*/
-
-DROP TRIGGER IF EXISTS fi_de_trajecte;
-DELIMITER //
-CREATE TRIGGER fi_de_trajecte 
-AFTER update ON trajecte
-FOR EACH ROW
-BEGIN
-	if new.Hora_final != old.Hora_final || old.Hora_final is null then
-		/* donem el trajecte per finalitzat, per tant calculem el preu i el posem a la taula de facturació.*/
-        insert into 
-        facturacio (hora, id_Trajecte 	,	temps,  
-							subcripcio,
-                            preu 	,
-                            id_user )  values         
-				(	now(), new.idTrajecte, ( TIMESTAMPDIFF(minute, old.Hora_inici , new.Hora_final) )  ,
-							( select tipus_SUBSCRIPCIONS_idSUBSCRIPCIONS from usuari where idUsuari = new.USUARI_idUSUARI  ), 	
-							calcula_preu_trajecte(new.idTRAJECTE), 
-                            new.USUARI_idUSUARI) ; 
-	end if;
-    
-END
-//
-DELIMITER ;
-
-
--- Abans del trigger els docks estàn tots buits.
-SELECT idESTACIO, docks_lliures 
-FROM ESTACIO 
-WHERE idESTACIO IN (5,1);
-
-INSERT INTO TRAJECTE
-(Hora_inici, Hora_final, dock_final_lliure, id_EST_origen, id_EST_fin,
- BICICLETA_idBICICLETA, USUARI_idUSUARI)
-VALUES
-(NOW(), NULL, 1, 5, 10, 3, 2);
-
-
-
-
--- 4. caducitat_subscripcio -- Verificar i avisar al usuari que la seva subscripcio caduca
--- 5. eliminar_usuari -- si la subscripcio té més de 6 mesos inactiva eliminar usuari
-
--- EVENTOS
-
--- 1. event_estat_bateries  -- verificar els estats de les bateries cada cop que s´utilitzen les bicis
--- 2. reset_estacions  -- Cada nit a les 03:00 reiniciar els docks
--- 3. actualitzar_estat_bici -- si una bici té incidents o l´usuari informa d´un inciedn, gestionmar retirada immediata
--- 4. bloquejar_bici  -- una bici amb incidencia oberta no es pot assignar a cap usuari.
--- 5. validar_estat_bici -- una bici arreglada pot tornar a possar-se al dock
 
