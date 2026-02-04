@@ -131,9 +131,50 @@ SELECT Bici_operativa(5);
 
 -- 1. Iniciar_trajecte(id_trajecte, id_estacioFi)
 -- 2. finalitzar_trajecte(id_trajecte, id_estacio_fi)
+
+DROP PROCEDURE IF EXISTS fi_trajecte;
+DELIMITER //
+CREATE PROCEDURE fi_trajecte( in id_trajecte int , id_estacio int  )
+BEGIN
+/* comprovem que hi ha lloc lliure a la destinació*/
+if (select docks_lliures from estacio where idESTACIO = id_estacio ) <= 0 then
+	/* si no hi havia lloc, marquem el rtajecte amb 0 ( NO/FALSE ) per poder facturar d'acord */
+	update trajecte set dock_final_lliure = false where idTRAJECTE = id_trajecte  ;
+    select " Has de buscar una altra estació amb llocs lliures";
+else 
+	update trajecte  /* marquem hora final i estació de final*/
+		set Hora_final = now() , id_EST_fin = id_estacio 
+        where  idTRAJECTE = id_trajecte  ; /* pel trajecte en concret */
+	/* a l'estació hem de ocupar un lloc , per tant té un lliure menys . */
+    update estacio 
+			set docks_lliures = docks_lliures - 1 where idESTACIO = id_estacio ; 
+	update bicicleta 
+			set ESTACIO_idESTACIO = id_estacio 
+            where idBICICLETA = ( select BICICLETA_idBICICLETA from trajecte where idTRAJECTE = id_trajecte);
+end if ;
+-- select idTrajecte as "estas tancant el trajecte " from trajecte where idTRAJECTE = id_trajecte; 
+END
+//
+DELIMITER ;
+
+
+-- call fi_trajecte( 9 , 10 );
+ 
 -- 3. assignar_bici(id_usuari, id_estacio)
 -- 4. actualitzar_estacio(id_bici, id_nova_ubicacio)
--- 5. reinserir_bici(id_bici) -- per les bicicletes retirades del servei per incidencies.
+ /* -- reinserir_bici(id_bici) -- per les bicicletes retirades del servei per incidencies. */
+-- 5. mostra els trajectes en curs i la seva hora i estació d'origen , i la durada fins al moment.
+DROP PROCEDURE IF EXISTS trajectes_en_curs;
+DELIMITER //
+CREATE PROCEDURE trajectes_en_curs(  )
+/* retorna la llista de trajectes no finaltizats ( "en curs" i el seu origen*/
+BEGIN
+	select id_EST_origen , Hora_inici from trajecte where Hora_final IS NULL ;
+END
+//
+DELIMITER ;
+
+   --   call trajectes_en_curs; 
 
 -- TRIGGERS
 
