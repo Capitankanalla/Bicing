@@ -31,9 +31,9 @@ CREATE TRIGGER iniciar_trajecte
 BEFORE INSERT ON TRAJECTE
 FOR EACH ROW
 BEGIN
-    -- Restar 1 dock lliure a l'estació origen
+    -- Afegir 1 dock lliure a l'estació origen
     UPDATE ESTACIO
-    SET docks_lliures = docks_lliures - 1
+    SET docks_lliures = docks_lliures + 1
     WHERE idESTACIO = NEW.id_EST_origen;
 END//
 
@@ -62,9 +62,9 @@ BEGIN
             SET MESSAGE_TEXT = 'No hi ha docks lliures a l\'estació final';
         END IF;
 
-        -- Sumar 1 dock lliure
+        -- Restar 1 dock lliure
         UPDATE ESTACIO
-        SET docks_lliures = docks_lliures + 1
+        SET docks_lliures = docks_lliures - 1
         WHERE idESTACIO = NEW.id_EST_fin;
 
         -- Moure la bici a l'estació final
