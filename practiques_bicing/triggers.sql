@@ -130,3 +130,32 @@ END//
 DELIMITER ;
 
 -- 5. eliminar_usuari -- si la subscripcio té més de 6 mesos inactiva eliminar usuari
+DELIMITER //
+
+CREATE TRIGGER subscripcio_inactiva
+BEFORE INSERT ON TRAJECTE
+FOR EACH ROW
+
+BEGIN
+    DECLARE data_fi DATE;
+    DECLARE mesos_caducitat INT;
+    
+    -- Consuletm la subscripcio dle usuari
+    -- i si està caducada i té mès de 6 mesos
+    -- s´el considera inactiu i s´el.limina de la taula.
+    SELECT data_fi
+    INTO data_fi
+    from SUBSCRIPCIO
+    WHERE USUARI_idUSUARI = NEW.USUARI_idUSUARI;
+    
+    -- Un cop tenim la data, revisem el temps que porta caducada
+    SET mesos_caducitat = TIMESTAMPDIFF(MONTH, data_fi, CURDATE());
+    
+    -- I als 6 mesos eliminem l´usuari.
+	    IF mesos_caducitat > 6 THEN
+            DELETE FROM USUARI
+            WHERE idUSUARI = NEW.USUARI_idUSUARI;
+        END IF;
+	END//
+
+DELIMITER ;
