@@ -177,6 +177,31 @@ CREATE TABLE IF NOT EXISTS `BICING_PRAC`.`INCIDENT_feedback` (
     ON UPDATE CASCADE
     )
 ENGINE = InnoDB;
+-- ---------------------------------------------------------------------------------------
+DROP TABLE IF EXISTS `bicing_prac`.`facturacio` ;
+
+CREATE TABLE IF NOT EXISTS `bicing_prac`.`facturacio` (
+  `id_factura` INT(11) NOT NULL AUTO_INCREMENT,
+  hora datetime default now(),
+  id_trajecte int not null ,
+  
+  `id_user` INT(11) NULL,/* si posem id de trajecte , ja tindriem relacionat aquest valor....*/
+  `temps` TIME NULL, /* si posem id de trajecte , ja tindriem relacionat aquest valor....*/
+  -- AMB LA ID de trajecte associat, podríem trobar aquests dos valors... però s'hauria de calcular cada cop
+  
+  `preu` DECIMAL(11,3) NULL DEFAULT NULL,
+  `subcripcio` INT(11) NULL DEFAULT NULL, /* no faria falta xk ja tenim usuari, però podria canviar de subscrupcio entre viatges, mantenim el valor. */
+    PRIMARY KEY (`id_factura`),
+  INDEX `usuari_a_facturar` (`id_user` ASC) ,
+  INDEX `subcripcio` (`subcripcio` ASC) ,
+  CONSTRAINT `facturacio_ibfk_1`
+    FOREIGN KEY (`subcripcio`)
+    REFERENCES `bicing_prac`.`tipus_subscripcions` (`idSUBSCRIPCIONS`),
+  CONSTRAINT `usuari_a_facturar`
+    FOREIGN KEY (`id_user`)
+    REFERENCES `bicing_prac`.`usuari` (`idUSUARI`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
 
 
 SET SQL_MODE=@OLD_SQL_MODE;
