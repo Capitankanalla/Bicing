@@ -180,6 +180,7 @@ DELIMITER ;
 
 -- 1. validar_bateria -- abans d´assignar una bici electrica validar l´estat de carrega)
 -- 2. inici_trajecte -- sumar un dock lliure de la estacio on es la bici
+/*
 DELIMITER //
 
 CREATE TRIGGER iniciar_trajecte
@@ -231,8 +232,30 @@ BEGIN
 END//
 
 DELIMITER ;
+*/
 
-
+DROP TRIGGER IF EXISTS fi_de_trajecte;
+DELIMITER //
+CREATE TRIGGER fi_de_trajecte 
+AFTER update ON trajecte
+FOR EACH ROW
+BEGIN
+	if new.Hora_final != old.Hora_final || old.Hora_final is null then
+		/* donem el trajecte per finalitzat, per tant calculem el preu i el posem a la taula de facturació.*/
+        insert into 
+        facturacio (hora, id_Trajecte 	,	temps,  
+							subcripcio,
+                            preu 	,
+                            id_user )  values         
+				(	now(), new.idTrajecte, ( TIMESTAMPDIFF(minute, old.Hora_inici , new.Hora_final) )  ,
+							( select tipus_SUBSCRIPCIONS_idSUBSCRIPCIONS from usuari where idUsuari = new.USUARI_idUSUARI  ), 	
+							calcula_preu_trajecte(new.idTRAJECTE), 
+                            new.USUARI_idUSUARI) ; 
+	end if;
+    
+END
+//
+DELIMITER ;
 
 
 -- Abans del trigger els docks estàn tots buits.
