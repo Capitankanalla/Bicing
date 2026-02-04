@@ -50,7 +50,7 @@ ENGINE = InnoDB;
 -- Table `BICING_PRAC`.`ESTACIO`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `BICING_PRAC`.`ESTACIO` (
-  `idESTACIO` INT NOT NULL,
+  `idESTACIO` INT AUTO_INCREMENT NOT NULL,
   `ubicacio` VARCHAR(45) NOT NULL,
   `num_docksBicing` INT UNSIGNED NOT NULL,
   `docks_lliures` INT UNSIGNED NOT NULL,
