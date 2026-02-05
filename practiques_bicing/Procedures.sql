@@ -97,3 +97,18 @@ DELIMITER ;
 --   call trajectes_en_curs;    
 
 -- _______________Procedure 5 _______________________________________-- 
+
+-- Procedure per avisar al usuari que té la suscripcio caducada
+
+DELIMITER //
+
+CREATE PROCEDURE avisar_inactius()
+BEGIN
+    SELECT CONCAT('Usuari ', Nom, ' té la subscripció caducada')
+    FROM USUARI
+    WHERE renovacio < DATE_SUB(CURDATE(), INTERVAL 6 MONTH);
+END//
+
+DELIMITER ;
+
+
