@@ -92,6 +92,8 @@ VALUES
 -- 4. caducitat_subscripcio -- Verificar i avisar al usuari que la seva subscripcio caduca
 DELIMITER //
 
+DROP TRIGGER IF EXISTS validar_subscripcio_abans_sortir;
+
 CREATE TRIGGER validar_subscripcio_abans_sortir
 BEFORE INSERT ON TRAJECTE
 FOR EACH ROW
@@ -99,13 +101,11 @@ BEGIN
     DECLARE data_fi DATE;
     DECLARE dies_restants INT;
 
-    -- Obtenir la data de fi de la subscripció de l’usuari
-    SELECT data_fi
+    SELECT renovacio
     INTO data_fi
-    FROM SUBSCRIPCIO
-    WHERE USUARI_idUSUARI = NEW.USUARI_idUSUARI;
+    FROM USUARI
+    WHERE idUSUARI = NEW.USUARI_idUSUARI;
 
-    -- Si no té subscripció → bloquejar
     IF data_fi IS NULL THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'La teva subscripció s´ha acabat';
@@ -113,13 +113,11 @@ BEGIN
 
     SET dies_restants = DATEDIFF(data_fi, CURDATE());
 
-    -- Subscripció caducada → bloquejar
     IF dies_restants < 0 THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Subscripció caducada: truca al tlf  ********* per reactivar-la';
+            SET MESSAGE_TEXT = 'Subscripció caducada: truca al tlf ********* per reactivar-la';
     END IF;
 
-    -- Subscripció a punt de caducar → avisar
     IF dies_restants BETWEEN 0 AND 5 THEN
         INSERT INTO AVIS_SUBSCRIPCIO (idUsuari, data_avis, dies_restants, missatge)
         VALUES (NEW.USUARI_idUSUARI, NOW(), dies_restants, 'La teva subscripció caducarà aviat');
