@@ -1,0 +1,3 @@
+UPDATE USUARI
+SET data_subscripcio = DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND() * 730) DAY),
+    renovacio = DATE_ADD(data_subscripcio, INTERVAL 1 YEAR);
