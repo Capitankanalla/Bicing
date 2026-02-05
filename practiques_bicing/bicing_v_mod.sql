@@ -15,6 +15,16 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+-- -----------------------------------------------------
+-- Schema BICING_PRAC
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema BICING_PRAC
+-- -----------------------------------------------------
+-- DROP SCHEMA IF EXISTS `Bicing_prac`;
+CREATE SCHEMA IF NOT EXISTS `BICING_PRAC` DEFAULT CHARACTER SET utf8 ;
+USE `BICING_PRAC` ;
 --
 -- Table structure for table `bicicleta`
 --
@@ -239,3 +249,4 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2026-02-05 18:31:43
+
