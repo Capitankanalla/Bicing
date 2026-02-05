@@ -36,3 +36,64 @@ CALL generar_trajecte();
 
 -- SELECT * FROM TRAJECTE ORDER BY idTRAJECTE DESC LIMIT 5;
 
+
+-- _______________________PROCEDURE 2________________________ --
+
+-- calcula el total facturat entre 2 dates
+DROP PROCEDURE IF EXISTS facturacio_entre_dates;
+DELIMITER //
+CREATE PROCEDURE facturacio_entre_dates( in data1 date , data2 date  )
+BEGIN
+
+select sum(preu) from facturacio where CAST( hora as DATE ) between data1 and data2 ; 
+ 
+END
+//
+DELIMITER ;
+ 
+-- call facturacio_entre_dates( "2026-02-02" , "2026-02-2" );
+
+-- _____________Procedure 3 __________________________________--
+
+DROP PROCEDURE IF EXISTS fi_trajecte;
+DELIMITER //
+CREATE PROCEDURE fi_trajecte( in id_trajecte int , id_estacio int  )
+BEGIN
+/* comprovem que hi ha lloc lliure a la destinació*/
+if (select docks_lliures from estacio where idESTACIO = id_estacio ) <= 0 then
+	/* si no hi havia lloc, marquem el rtajecte amb 0 ( NO/FALSE ) per poder facturar d'acord */
+	update trajecte set dock_final_lliure = false where idTRAJECTE = id_trajecte  ;
+    select " Has de buscar una altra estació amb llocs lliures";
+else 
+	update trajecte  /* marquem hora final i estació de final*/
+		set Hora_final = now() , id_EST_fin = id_estacio 
+        where  idTRAJECTE = id_trajecte  ; /* pel trajecte en concret */
+	/* a l'estació hem de ocupar un lloc , per tant té un lliure menys . */
+    update estacio 
+			set docks_lliures = docks_lliures - 1 where idESTACIO = id_estacio ; 
+	update bicicleta 
+			set ESTACIO_idESTACIO = id_estacio 
+            where idBICICLETA = ( select BICICLETA_idBICICLETA from trajecte where idTRAJECTE = id_trajecte);
+end if ;
+-- select idTrajecte as "estas tancant el trajecte " from trajecte where idTRAJECTE = id_trajecte; 
+END
+//
+DELIMITER ;
+
+
+-- call fi_trajecte( 5 , 10 );
+ -- _____________________Procedure 4 _______________________________--
+
+DROP PROCEDURE IF EXISTS trajectes_en_curs;
+DELIMITER //
+CREATE PROCEDURE trajectes_en_curs(  )
+/* retorna la llista de trajectes no finaltizats ( "en curs" i el seu origen*/
+BEGIN
+	select id_EST_origen , Hora_inici from trajecte where Hora_final IS NULL ;
+END
+//
+DELIMITER ;
+
+--   call trajectes_en_curs;    
+
+-- _______________Procedure 5 _______________________________________-- 
