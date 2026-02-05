@@ -155,6 +155,21 @@ DELIMITER ;
 SELECT * FROM bicicleta WHERE idBICICLETA = 5;
 SELECT Bici_operativa(5);
 
+-- _____________FUNC_5__________________-- 
+
+DROP FUNCTION IF EXISTS calcula_docks_lliures ; 
+
+DELIMITER //
+CREATE FUNCTION calcula_docks_lliures (  id_estacio int )
+RETURNS int 
+BEGIN       
+       set @num_bicis   =  	(select count(idBicicleta) from bicicleta where ESTACIO_idESTACIO = id_estacio  ) ;
+       set @dock_lliure = 	( select num_docksBicing from estacio where idESTACIO = id_estacio ) - @num_bicis ;
+return @dock_lliure  ;
+
+END
+//
+DELIMITER ;
 
 
 
