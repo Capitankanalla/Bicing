@@ -129,4 +129,30 @@ END//
 
 DELIMITER ;
 
--- 5. Pendent de trobar i desenvolupar el darrer trigger
+-- 5. Trigger per avisar al sistema de estacions plenes amb un preavis de 2 docks lliures
+DELIMITER //
+
+CREATE TRIGGER dokcs_plens
+AFTER UPDATE ON bicicleta
+FOR EACH ROW
+BEGIN
+    DECLARE docks_lliures INT;
+     DECLARE msg VARCHAR(255);
+    
+    IF NEW.ESTACIO_idESTACIO <> OLD.ESTACIO_idESTACIO THEN
+    
+        SET docks_lliures = calcula_docks_lliures(NEW.ESTACIO_idESTACIO);
+
+        IF docks_lliures <= 3 THEN
+                SET msg = CONCAT(
+                    'AVIS: l''estacio ', NEW.ESTACIO_idESTACIO,
+                    ' esta gairebe plena (', docks_lliures, ' docks lliures)'
+                );
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = msg;
+        END IF;
+
+    END IF;
+END//
+
+DELIMITER ;
