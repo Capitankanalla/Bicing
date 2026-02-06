@@ -41,7 +41,7 @@ DELIMITER ;
 
 
 -- 3. Final_trajecte -- restar un dock de la estacio on es deixa la bici
-DELIMITER //
+/* DELIMITER //
 
 CREATE TRIGGER finalitzar_trajecte
 AFTER UPDATE ON TRAJECTE
@@ -75,7 +75,31 @@ BEGIN
     END IF;
 END//
 
+DELIMITER ; */
+
+DROP TRIGGER IF EXISTS fi_de_trajecte;
+DELIMITER //
+CREATE TRIGGER fi_de_trajecte 
+AFTER update ON trajecte
+FOR EACH ROW
+BEGIN
+	if new.Hora_final != old.Hora_final || old.Hora_final is null then
+		/* donem el trajecte per finalitzat, per tant calculem el preu i el posem a la taula de facturació.*/
+        insert into 
+        facturacio (hora, id_Trajecte 	,	temps,  
+							subcripcio,
+                            preu 	,
+                            id_user )  values         
+				(	now(), new.idTrajecte, ( TIMESTAMPDIFF(minute, old.Hora_inici , new.Hora_final) )  ,
+							( select tipus_SUBSCRIPCIONS_idSUBSCRIPCIONS from usuari where idUsuari = new.USUARI_idUSUARI  ), 	
+							calcula_preu_trajecte(new.idTRAJECTE), 
+                            new.USUARI_idUSUARI) ; 
+	end if;
+    
+END
+//
 DELIMITER ;
+
 
 -- Abans del trigger els docks estàn tots buits.
 SELECT idESTACIO, docks_lliures 
