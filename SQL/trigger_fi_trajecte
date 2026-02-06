@@ -28,3 +28,37 @@ END
 DELIMITER ;
  -- call fi_trajecte( 10 , 10 );
 
+/* PROCEDURE 3  */
+
+-- en tancar un trajecte 
+-- 		resta un dock lliure a l'estació de final
+-- 				o si està ocupat canvia dock_final_lliure = false 
+-- 		calcula el preu del trajecte
+DROP PROCEDURE IF EXISTS fi_trajecte;
+DELIMITER //
+CREATE PROCEDURE fi_trajecte( in id_trajecte int , id_estacio int  )
+BEGIN
+/* comprovem que hi ha lloc lliure a la destinació*/
+if (select docks_lliures from estacio where idESTACIO = id_estacio ) <= 0 then
+	/* si no hi havia lloc, marquem el rtajecte amb 0 ( NO/FALSE ) per poder facturar d'acord */
+	update trajecte set dock_final_lliure = false where idTRAJECTE = id_trajecte  ;
+    select " Has de buscar una altra estació amb llocs lliures";
+else 
+	update trajecte  /* marquem hora final i estació de final*/
+		set Hora_final = now() , id_EST_fin = id_estacio 
+        where  idTRAJECTE = id_trajecte  ; /* pel trajecte en concret */
+	/* a l'estació hem de ocupar un lloc , per tant té un lliure menys . */
+    update estacio 
+			set docks_lliures = docks_lliures - 1 where idESTACIO = id_estacio ; 
+	update bicicleta 
+			set ESTACIO_idESTACIO = id_estacio 
+            where idBICICLETA = ( select BICICLETA_idBICICLETA from trajecte where idTRAJECTE = id_trajecte);
+end if ;
+-- select idTrajecte as "estas tancant el trajecte " from trajecte where idTRAJECTE = id_trajecte; 
+END
+//
+DELIMITER ;
+
+
+-- call fi_trajecte( 1 , 10 );
+ 
